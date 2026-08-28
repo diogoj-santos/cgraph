@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Flor - WebGL simples</title>
+</head>
+<body>
+<canvas id="tela" width="400" height="400"></canvas>
+
+<script>
+// Pega o canvas e o contexto WebGL
+var canvas = document.getElementById("tela");
+var gl = canvas.getContext("webgl");
+
+gl.clearColor(0.85, 0.95, 1.0, 1.0);
+gl.clear(gl.COLOR_BUFFER_BIT);
+
+// Código do vertex shader
+var vsFonte =
+  "attribute vec2 aPos;" +
+  "void main() {" +
+  "  gl_Position = vec4(aPos, 0.0, 1.0);" +
+  "}";
+
+// Código do fragment shader (recebe a cor de fora)
+var fsFonte =
+  "precision mediump float;" +
+  "uniform vec4 uCor;" +
+  "void main() {" +
+  "  gl_FragColor = uCor;" +
+  "}";
+
+function criarShader(tipo, fonte) {
+  var shader = gl.createShader(tipo);
+  gl.shaderSource(shader, fonte);
+  gl.compileShader(shader);
+  return shader;
+}
+
+var vs = criarShader(gl.VERTEX_SHADER, vsFonte);
+var fs = criarShader(gl.FRAGMENT_SHADER, fsFonte);
+
+var programa = gl.createProgram();
+gl.attachShader(programa, vs);
+gl.attachShader(programa, fs);
+gl.linkProgram(programa);
+gl.useProgram(programa);
+
+var aPos = gl.getAttribLocation(programa, "aPos");
+var uCor = gl.getUniformLocation(programa, "uCor");
+
+var buffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+gl.enableVertexAttribArray(aPos);
+gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+// Função para desenhar um triângulo com uma cor
+function desenharTriangulo(vertices, cor) {
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+  gl.uniform4fv(uCor, cor);
+  gl.drawArrays(gl.TRIANGLES, 0, vertices.length / 2);
+}
+
+// Função para desenhar um círculo (leque de triângulos)
+function desenharCirculo(cx, cy, raio, cor, pontos) {
+  var vertices = [];
+  for (var i = 0; i < pontos; i++) {
+    var a1 = (i / pontos) * 2 * Math.PI;
+    var a2 = ((i + 1) / pontos) * 2 * Math.PI;
+    vertices.push(cx, cy);
+    vertices.push(cx + Math.cos(a1) * raio, cy + Math.sin(a1) * raio);
+    vertices.push(cx + Math.cos(a2) * raio, cy + Math.sin(a2) * raio);
+  }
+  desenharTriangulo(vertices, cor);
+}
+
+// ---- Desenho da flor ----
+
+// Caule (retângulo feito de dois triângulos)
+var caule = [
+  -0.03, -0.8,
+   0.03, -0.8,
+  -0.03,  0.0,
+
+  -0.03,  0.0,
+   0.03, -0.8,
+   0.03,  0.0
+];
+desenharTriangulo(caule, [0.2, 0.6, 0.2, 1.0]);
+
+// Folha (um triângulo simples)
+var folha = [
+  -0.03, -0.4,
+  -0.35, -0.25,
+  -0.03, -0.15
+];
+desenharTriangulo(folha, [0.25, 0.7, 0.3, 1.0]);
+
+// Pétalas (6 círculos ao redor do centro)
+var petalas = 6;
+for (var i = 0; i < petalas; i++) {
+  var ang = (i / petalas) * 2 * Math.PI;
+  var px = Math.cos(ang) * 0.22;
+  var py = 0.15 + Math.sin(ang) * 0.22;
+  desenharCirculo(px, py, 0.15, [1.0, 0.4, 0.55, 1.0], 20);
+}
+
+// Centro da flor
+desenharCirculo(0.0, 0.15, 0.13, [1.0, 0.75, 0.1, 1.0], 20);
+</script>
+</body>
+</html>
